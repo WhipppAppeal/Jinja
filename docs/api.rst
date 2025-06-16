@@ -289,8 +289,6 @@ others fail.
 The closest to regular Python behavior is the :class:`StrictUndefined` which
 disallows all operations beside testing if it's an undefined object.
 
-When :class:`Undefined` is created in an ``except`` or ``finally`` clause,
-
 
 .. autoclass:: jinja2.Undefined()
 
@@ -315,6 +313,8 @@ When :class:`Undefined` is created in an ``except`` or ``finally`` clause,
         is usually one of :exc:`UndefinedError` or :exc:`SecurityError`.
 
     .. attribute:: _undefined_context
+
+        .. versionadded:: 3.2
 
         The default ``__context__`` for exceptions raised when operations
         on this undefined value fail.

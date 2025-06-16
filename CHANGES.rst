@@ -17,6 +17,7 @@ Unreleased
     exception is stored in a new  attribute, ``_undefined_context``,
     and used as the default ``__context__`` for errors raised by
     ``_fail_with_undefined_error``.
+    :issue:`2103`
 
 
 Version 3.1.6
