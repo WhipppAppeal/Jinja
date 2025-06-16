@@ -289,7 +289,6 @@ others fail.
 The closest to regular Python behavior is the :class:`StrictUndefined` which
 disallows all operations beside testing if it's an undefined object.
 
-
 .. autoclass:: jinja2.Undefined()
 
     .. attribute:: _undefined_hint
