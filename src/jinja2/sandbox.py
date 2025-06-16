@@ -299,7 +299,7 @@ class SandboxedEnvironment(Environment):
                     try:
                         value = getattr(obj, attr)
                     except AttributeError:
-                        pass
+                        return self.undefined(obj=obj, name=argument)
                     else:
                         fmt = self.wrap_str_format(value)
                         if fmt is not None:
@@ -319,7 +319,7 @@ class SandboxedEnvironment(Environment):
             try:
                 return obj[attribute]
             except (TypeError, LookupError):
-                pass
+                return self.undefined(obj=obj, name=attribute)
         else:
             fmt = self.wrap_str_format(value)
             if fmt is not None:
