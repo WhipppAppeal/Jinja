@@ -311,6 +311,17 @@ disallows all operations beside testing if it's an undefined object.
         The exception that the undefined object wants to raise.  This
         is usually one of :exc:`UndefinedError` or :exc:`SecurityError`.
 
+    .. attribute:: _undefined_context
+
+        .. versionadded:: 3.2
+
+        The default ``__context__`` for exceptions raised when operations
+        on this undefined value fail.
+
+        When :class:`Undefined` is created while an exception is being
+        handled (for example, inside an ``except``  clause),
+        ``_undefined_context`` is automatically set to the handled exception.
+
     .. method:: _fail_with_undefined_error(\*args, \**kwargs)
 
         When called with any arguments this method raises
