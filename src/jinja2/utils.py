@@ -581,8 +581,8 @@ class LRUCache:
 def select_autoescape(
     enabled_extensions: t.Collection[str] = ("html", "htm", "xml"),
     disabled_extensions: t.Collection[str] = (),
-    default_for_string: bool = True,
-    default: bool = False,
+    default_for_string: bool | str = True,
+    default: bool | str = False,
 ) -> t.Callable[[str | None], bool]:
     """Intelligently sets the initial value of autoescaping based on the
     filename of the template.  This is the recommended way to configure
