@@ -124,6 +124,15 @@ def make_multi_attrgetter(
     return attrgetter
 
 
+def _try_convert_int(
+    x: str,
+) -> str | int:
+    try:
+        return int(x)
+    except ValueError:
+        return x
+
+
 def _prepare_attribute_parts(
     attr: str | int | None,
 ) -> list[str | int]:
@@ -131,7 +140,7 @@ def _prepare_attribute_parts(
         return []
 
     if isinstance(attr, str):
-        return [int(x) if x.isdigit() else x for x in attr.split(".")]
+        return [_try_convert_int(x) for x in attr.split(".")]
 
     return [attr]
 
