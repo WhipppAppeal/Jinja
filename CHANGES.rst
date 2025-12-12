@@ -13,6 +13,7 @@ Unreleased
 -   Use modern packaging metadata with ``pyproject.toml`` instead of ``setup.cfg``.
     :pr:`1793`
 -   Use ``flit_core`` instead of ``setuptools`` as build backend.
+-   Metadata: List supported python versions as classifiers in pyproject.toml
 
 
 Version 3.1.6
