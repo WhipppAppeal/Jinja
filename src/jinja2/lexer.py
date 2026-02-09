@@ -270,6 +270,7 @@ class Token(t.NamedTuple):
     lineno: int
     type: str
     value: str
+    colno: int = 0
 
     def __str__(self) -> str:
         return describe_token(self)
@@ -396,7 +397,7 @@ class TokenStream:
 
     def close(self) -> None:
         """Close the stream."""
-        self.current = Token(self.current.lineno, TOKEN_EOF, "")
+        self.current = Token(self.current.lineno, TOKEN_EOF, "", 0)
         self._iter = iter(())
         self.closed = True
 
@@ -614,14 +615,14 @@ class Lexer:
 
     def wrap(
         self,
-        stream: t.Iterable[tuple[int, str, str]],
+        stream: t.Iterable[tuple[int, str, str, int]],
         name: str | None = None,
         filename: str | None = None,
     ) -> t.Iterator[Token]:
         """This is called with the stream as returned by `tokenize` and wraps
         every token in a :class:`Token` and converts the value.
         """
-        for lineno, token, value_str in stream:
+        for lineno, token, value_str, colno in stream:
             if token in ignored_tokens:
                 continue
 
@@ -664,7 +665,7 @@ class Lexer:
             elif token == TOKEN_OPERATOR:
                 token = operators[value_str]
 
-            yield Token(lineno, token, value)
+            yield Token(lineno, token, value, colno)
 
     def tokeniter(
         self,
@@ -672,9 +673,12 @@ class Lexer:
         name: str | None,
         filename: str | None = None,
         state: str | None = None,
-    ) -> t.Iterator[tuple[int, str, str]]:
+    ) -> t.Iterator[tuple[int, str, str, int]]:
         """This method tokenizes the text and returns the tokens in a
         generator. Use this method if you just want to tokenize a template.
+
+        .. versionchanged:: 3.2
+            Tuples now include a column number as the fourth element.
 
         .. versionchanged:: 3.0
             Only ``\\n``, ``\\r\\n`` and ``\\r`` are treated as line
@@ -688,6 +692,7 @@ class Lexer:
         source = "\n".join(lines)
         pos = 0
         lineno = 1
+        line_start_pos = 0
         stack = ["root"]
 
         if state is not None and state != "root":
@@ -765,8 +770,13 @@ class Lexer:
                         elif token == "#bygroup":
                             for key, value in m.groupdict().items():
                                 if value is not None:
-                                    yield lineno, key, value
-                                    lineno += value.count("\n")
+                                    yield lineno, key, value, pos - line_start_pos + 1
+                                    newline_count = value.count("\n")
+                                    if newline_count:
+                                        line_start_pos = (
+                                            pos + source[pos:m.end()].rfind("\n") + 1
+                                        )
+                                    lineno += newline_count
                                     break
                             else:
                                 raise RuntimeError(
@@ -778,9 +788,14 @@ class Lexer:
                             data = groups[idx]
 
                             if data or token not in ignore_if_empty:
-                                yield lineno, token, data  # type: ignore[misc]
+                                yield lineno, token, data, pos - line_start_pos + 1  # type: ignore[misc]
 
-                            lineno += data.count("\n") + newlines_stripped
+                            newline_count = data.count("\n") + newlines_stripped
+                            if newline_count:
+                                line_start_pos = (
+                                    pos + source[pos:m.end()].rfind("\n") + 1
+                                )
+                            lineno += newline_count
                             newlines_stripped = 0
 
                 # strings as token just are yielded as it.
@@ -813,9 +828,14 @@ class Lexer:
 
                     # yield items
                     if data or tokens not in ignore_if_empty:
-                        yield lineno, tokens, data
+                        yield lineno, tokens, data, pos - line_start_pos + 1
 
-                    lineno += data.count("\n")
+                    newline_count = data.count("\n")
+                    if newline_count:
+                        line_start_pos = (
+                            pos + data.rfind("\n") + 1
+                        )
+                    lineno += newline_count
 
                 line_starting = m.group()[-1:] == "\n"
                 # fetch new position into new variable so that we can check

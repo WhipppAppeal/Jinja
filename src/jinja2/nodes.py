@@ -114,16 +114,21 @@ class Node(metaclass=NodeType):
     All nodes have fields and attributes.  Fields may be other nodes, lists,
     or arbitrary values.  Fields are passed to the constructor as regular
     positional arguments, attributes as keyword arguments.  Each node has
-    two attributes: `lineno` (the line number of the node) and `environment`.
+    two attributes: `lineno` (the line number of the node), `colno`
+    (the column number of the node) and `environment`.
     The `environment` attribute is set at the end of the parsing process for
     all nodes automatically.
+
+    .. versionchanged:: 3.2
+        Added ``colno`` attribute for column number tracking.
     """
 
     fields: tuple[str, ...] = ()
-    attributes: tuple[str, ...] = ("lineno", "environment")
+    attributes: tuple[str, ...] = ("lineno", "colno", "environment")
     abstract = True
 
     lineno: int
+    colno: int
     environment: t.Optional["Environment"]
 
     def __init__(self, *fields: t.Any, **attributes: t.Any) -> None:
@@ -225,6 +230,20 @@ class Node(metaclass=NodeType):
             if "lineno" in node.attributes:
                 if node.lineno is None or override:
                     node.lineno = lineno
+            todo.extend(node.iter_child_nodes())
+        return self
+
+    def set_colno(self, colno: int, override: bool = False) -> "Node":
+        """Set the column numbers of the node and children.
+
+        .. versionadded:: 3.2
+        """
+        todo = deque([self])
+        while todo:
+            node = todo.popleft()
+            if "colno" in node.attributes:
+                if node.colno is None or override:
+                    node.colno = colno
             todo.extend(node.iter_child_nodes())
         return self
 

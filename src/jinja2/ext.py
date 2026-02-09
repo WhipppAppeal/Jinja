@@ -726,7 +726,7 @@ class _CommentFinder:
 
     def find_backwards(self, offset: int) -> list[str]:
         try:
-            for _, token_type, token_value in reversed(
+            for _, token_type, token_value, *_ in reversed(
                 self.tokens[self.offset : offset]
             ):
                 if token_type in ("comment", "linecomment"):
@@ -743,7 +743,7 @@ class _CommentFinder:
     def find_comments(self, lineno: int) -> list[str]:
         if not self.comment_tags or self.last_lineno > lineno:
             return []
-        for idx, (token_lineno, _, _) in enumerate(self.tokens[self.offset :]):
+        for idx, (token_lineno, _, _, *_rest) in enumerate(self.tokens[self.offset :]):
             if token_lineno > lineno:
                 return self.find_backwards(self.offset + idx)
         return self.find_backwards(len(self.tokens))

@@ -175,7 +175,7 @@ class TestLexer:
 </html>"""
         )
         for tok in tokens:
-            lineno, token_type, value = tok
+            lineno, token_type, value, *_ = tok
             if token_type == "name" and value == "item":
                 assert lineno == 5
                 break
