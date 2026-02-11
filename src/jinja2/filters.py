@@ -1,4 +1,4 @@
-"""Built-in template filters used with the ``|`` operator."""
+﻿"""Built-in template filters used with the ``|`` operator."""
 
 import math
 import random
@@ -1808,8 +1808,7 @@ async def async_select_or_reject(
             if func(item):
                 yield item
 
-
-FILTERS = {
+FILTERS: t.Dict[str, t.Callable[..., t.Any]] = {
     "abs": abs,
     "attr": do_attr,
     "batch": do_batch,
