@@ -5,6 +5,11 @@ Version 3.2.0
 
 Unreleased
 
+-   Replace the ``unicode-escape`` codec with a custom escape sequence
+    decoder for template strings. Unrecognized escape sequences such as
+    ``\d`` no longer produce ``DeprecationWarning`` (or errors on newer
+    Python versions), and instead keep the backslash literally.
+    :issue:`1156`
 -   Drop support for Python 3.7, 3.8, and 3.9.
 -   Update minimum MarkupSafe version to >= 3.0.
 -   Update minimum Babel version to >= 2.17.

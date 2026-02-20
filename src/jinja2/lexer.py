@@ -6,6 +6,7 @@ template code and python code in expressions.
 
 import re
 import typing as t
+import unicodedata
 from ast import literal_eval
 from collections import deque
 from sys import intern
@@ -208,6 +209,68 @@ def count_newlines(value: str) -> int:
     useful for extensions that filter a stream.
     """
     return len(newline_re.findall(value))
+
+
+_simple_escapes: dict[str, str] = {
+    "0": "\0",
+    "a": "\a",
+    "b": "\b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+    "\\": "\\",
+    "'": "'",
+    '"': '"',
+}
+
+_escape_re = re.compile(
+    r"""\\(?:
+        ([\\0abfnrtv'"]) |    # single-char escape
+        x([0-9a-fA-F]{2}) |  # \xNN
+        u([0-9a-fA-F]{4}) |  # \uNNNN
+        U([0-9a-fA-F]{8}) |  # \UNNNNNNNN
+        N\{([^}]+)\}          # \N{name}
+    )""",
+    re.VERBOSE,
+)
+
+
+def _decode_escapes(value: str) -> str:
+    """Decode escape sequences in a Jinja2 template string.
+
+    Unlike Python's ``unicode-escape`` codec, this does not raise a
+    warning or error for unrecognized escape sequences.  Instead, the
+    backslash is kept literally, matching the behavior users expect
+    from template strings.
+    """
+
+    def _replace(match: re.Match[str]) -> str:
+        simple, x, u4, u8, name = match.groups()
+
+        if simple is not None:
+            return _simple_escapes[simple]
+
+        if x is not None:
+            return chr(int(x, 16))
+
+        if u4 is not None:
+            return chr(int(u4, 16))
+
+        if u8 is not None:
+            return chr(int(u8, 16))
+
+        if name is not None:
+            try:
+                return unicodedata.lookup(name)
+            except KeyError:
+                raise ValueError(f"unknown Unicode character name {name!r}") from None
+
+        # This should be unreachable given the regex.
+        return match.group()  # pragma: no cover
+
+    return _escape_re.sub(_replace, value)
 
 
 def compile_rules(environment: "Environment") -> list[tuple[str, str]]:
@@ -648,10 +711,8 @@ class Lexer:
             elif token == TOKEN_STRING:
                 # try to unescape string
                 try:
-                    value = (
+                    value = _decode_escapes(
                         self._normalize_newlines(value_str[1:-1])
-                        .encode("ascii", "backslashreplace")
-                        .decode("unicode-escape")
                     )
                 except Exception as e:
                     msg = str(e).split(":")[-1].strip()
