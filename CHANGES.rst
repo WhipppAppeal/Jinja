@@ -13,6 +13,9 @@ Unreleased
 -   Use modern packaging metadata with ``pyproject.toml`` instead of ``setup.cfg``.
     :pr:`1793`
 -   Use ``flit_core`` instead of ``setuptools`` as build backend.
+-   Allow ``copy`` and ``deepcopy`` on :class:`Template` objects. Since
+    templates are considered immutable, both return the same object.
+    :issue:`758`
 
 
 Version 3.1.6

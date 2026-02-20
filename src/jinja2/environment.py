@@ -1500,6 +1500,13 @@ class Template:
 
         return []
 
+    def __copy__(self) -> "te.Self":
+        return self
+
+    def __deepcopy__(self, memo: dict[int, t.Any]) -> "te.Self":
+        memo[id(self)] = self
+        return self
+
     def __repr__(self) -> str:
         if self.name is None:
             name = f"memory:{id(self):x}"
