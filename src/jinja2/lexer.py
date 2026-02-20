@@ -711,9 +711,7 @@ class Lexer:
             elif token == TOKEN_STRING:
                 # try to unescape string
                 try:
-                    value = _decode_escapes(
-                        self._normalize_newlines(value_str[1:-1])
-                    )
+                    value = _decode_escapes(self._normalize_newlines(value_str[1:-1]))
                 except Exception as e:
                     msg = str(e).split(":")[-1].strip()
                     raise TemplateSyntaxError(msg, lineno, name, filename) from e
