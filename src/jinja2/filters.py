@@ -1809,7 +1809,7 @@ async def async_select_or_reject(
                 yield item
 
 
-FILTERS = {
+FILTERS: dict[str, t.Callable[..., t.Any]] = {
     "abs": abs,
     "attr": do_attr,
     "batch": do_batch,

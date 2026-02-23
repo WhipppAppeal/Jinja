@@ -213,7 +213,7 @@ def test_in(value: t.Any, seq: t.Container[t.Any]) -> bool:
     return value in seq
 
 
-TESTS = {
+TESTS: dict[str, t.Callable[..., t.Any]] = {
     "odd": test_odd,
     "even": test_even,
     "divisibleby": test_divisibleby,
