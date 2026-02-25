@@ -41,7 +41,7 @@ if t.TYPE_CHECKING:
             pass
 
 
-F = t.TypeVar("F", bound=t.Callable[..., t.Any])
+FilterFunction = t.Callable[..., t.Any]
 K = t.TypeVar("K")
 V = t.TypeVar("V")
 
@@ -1815,7 +1815,7 @@ async def async_select_or_reject(
                 yield item
 
 
-FILTERS = {
+FILTERS: t.Dict[str, FilterFunction] = {
     "abs": abs,
     "attr": do_attr,
     "batch": do_batch,

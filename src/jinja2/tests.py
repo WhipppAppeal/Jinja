@@ -12,6 +12,9 @@ if t.TYPE_CHECKING:
     from .environment import Environment
 
 
+TestFunction = t.Callable[..., t.Any]
+
+
 def test_odd(value: int) -> bool:
     """Return true if the variable is odd."""
     return value % 2 == 1
@@ -213,7 +216,7 @@ def test_in(value: t.Any, seq: t.Container[t.Any]) -> bool:
     return value in seq
 
 
-TESTS = {
+TESTS: t.Dict[str, TestFunction] = {
     "odd": test_odd,
     "even": test_even,
     "divisibleby": test_divisibleby,
