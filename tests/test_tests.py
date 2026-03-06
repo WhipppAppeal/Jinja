@@ -27,6 +27,10 @@ class TestTestsCase:
         tmpl = env.from_string("""{{ "foo" is lower }}|{{ "FOO" is lower }}""")
         assert tmpl.render() == "True|False"
 
+    def test_divisibleby_zero(self, env):
+        tmpl = env.from_string("{{ 5 is divisibleby(0) }}")
+        assert tmpl.render() == "False"
+
     # Test type checks
     @pytest.mark.parametrize(
         "op,expect",

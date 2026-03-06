@@ -24,6 +24,8 @@ def test_even(value: int) -> bool:
 
 def test_divisibleby(value: int, num: int) -> bool:
     """Check if a variable is divisible by a number."""
+    if num == 0:
+        return False
     return value % num == 0
 
 

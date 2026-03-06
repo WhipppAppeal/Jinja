@@ -1074,6 +1074,11 @@ def sync_do_slice(
     If you pass it a second argument it's used to fill missing
     values on the last iteration.
     """
+    if slices <= 0:
+        raise FilterArgumentError(
+            f"slice: 'slices' must be greater than 0, got {slices}"
+        )
+
     seq = list(value)
     length = len(seq)
     items_per_slice = length // slices
@@ -1125,6 +1130,11 @@ def do_batch(
         {%- endfor %}
         </table>
     """
+    if linecount <= 0:
+        raise FilterArgumentError(
+            f"batch: 'linecount' must be greater than 0, got {linecount}"
+        )
+
     tmp: list[V] = []
 
     for item in value:

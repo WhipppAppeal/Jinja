@@ -70,6 +70,13 @@ class TestFilter:
             "[[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 'X', 'X']]"
         )
 
+    def test_batch_zero(self, env):
+        from jinja2.exceptions import FilterArgumentError
+
+        tmpl = env.from_string("{{ foo|batch(0)|list }}")
+        with pytest.raises(FilterArgumentError):
+            tmpl.render(foo=list(range(10)))
+
     def test_slice(self, env):
         tmpl = env.from_string("{{ foo|slice(3)|list }}|{{ foo|slice(3, 'X')|list }}")
         out = tmpl.render(foo=list(range(10)))
@@ -77,6 +84,13 @@ class TestFilter:
             "[[0, 1, 2, 3], [4, 5, 6], [7, 8, 9]]|"
             "[[0, 1, 2, 3], [4, 5, 6, 'X'], [7, 8, 9, 'X']]"
         )
+
+    def test_slice_zero(self, env):
+        from jinja2.exceptions import FilterArgumentError
+
+        tmpl = env.from_string("{{ foo|slice(0)|list }}")
+        with pytest.raises(FilterArgumentError):
+            tmpl.render(foo=list(range(10)))
 
     def test_escape(self, env):
         tmpl = env.from_string("""{{ '<">&'|escape }}""")
