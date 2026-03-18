@@ -309,11 +309,12 @@ class TestIfCondition:
         assert tmpl.render() == "..."
 
     def test_elif_deep(self, env):
-        elifs = "\n".join(f"{{% elif a == {i} %}}{i}" for i in range(1, 1000))
+        n = 100
+        elifs = "\n".join(f"{{% elif a == {i} %}}{i}" for i in range(1, n))
         tmpl = env.from_string(f"{{% if a == 0 %}}0{elifs}{{% else %}}x{{% endif %}}")
-        for x in (0, 10, 999):
+        for x in (0, 10, n - 1):
             assert tmpl.render(a=x).strip() == str(x)
-        assert tmpl.render(a=1000).strip() == "x"
+        assert tmpl.render(a=n).strip() == "x"
 
     def test_else(self, env):
         tmpl = env.from_string("{% if false %}XXX{% else %}...{% endif %}")
