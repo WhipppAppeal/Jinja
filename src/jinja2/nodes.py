@@ -67,6 +67,74 @@ class NodeType(type):
         d.setdefault("abstract", False)
         return type.__new__(mcs, name, bases, d)
 
+    def _classify_fields(cls, ns: dict[str, t.Any]) -> None:
+        """Pre-classify fields into node, node-list, and scalar categories
+        by resolving type annotations.  Called once after all node classes
+        are defined.  Results are stored as ``_node_fields`` and
+        ``_node_list_fields`` tuples on the class.
+        """
+        import types as _types
+
+        def _resolve(tp: t.Any) -> t.Any:
+            """Resolve strings and ForwardRef to actual types."""
+            if isinstance(tp, str):
+                return ns.get(tp, tp)
+            if isinstance(tp, t.ForwardRef):
+                return ns.get(tp.__forward_arg__, tp)
+            return tp
+
+        def _is_node_type(tp: t.Any) -> bool:
+            tp = _resolve(tp)
+            return isinstance(tp, type) and issubclass(tp, Node)
+
+        def _hint_is_node(hint: t.Any) -> bool:
+            """Check if a type hint refers to a Node (possibly optional)."""
+            if _is_node_type(hint):
+                return True
+            # Handle X | Y (types.UnionType) and typing.Optional/Union.
+            args = t.get_args(hint)
+            if args:
+                origin = t.get_origin(hint)
+                if origin is t.Union or isinstance(hint, _types.UnionType):
+                    return any(
+                        _is_node_type(a)
+                        for a in args
+                        if a is not type(None)
+                    )
+            return False
+
+        # Collect annotations from the MRO.
+        annotations: dict[str, t.Any] = {}
+        for klass in reversed(cls.__mro__):
+            annotations.update(getattr(klass, "__annotations__", {}))
+
+        node_fields: list[str] = []
+        node_list_fields: list[str] = []
+
+        for field_name in cls.fields:  # type: ignore[attr-defined]
+            hint = annotations.get(field_name)
+            if hint is None:
+                continue
+
+            # Bare string annotation (e.g. 'Expr').
+            if isinstance(hint, str):
+                resolved = ns.get(hint)
+                if resolved is not None and _is_node_type(resolved):
+                    node_fields.append(field_name)
+                continue
+
+            origin = t.get_origin(hint)
+
+            if origin is list:
+                args = t.get_args(hint)
+                if args and _hint_is_node(args[0]):
+                    node_list_fields.append(field_name)
+            elif _hint_is_node(hint):
+                node_fields.append(field_name)
+
+        cls._node_fields = tuple(node_fields)
+        cls._node_list_fields = tuple(node_list_fields)
+
 
 class EvalContext:
     """Holds evaluation time information.  Custom attributes can be attached
@@ -123,6 +191,10 @@ class Node(metaclass=NodeType):
     attributes: tuple[str, ...] = ("lineno", "environment")
     abstract = True
 
+    #: Pre-classified field tuples, set by _init_field_classifications().
+    _node_fields: t.ClassVar[tuple[str, ...]]
+    _node_list_fields: t.ClassVar[tuple[str, ...]]
+
     lineno: int
     environment: t.Optional["Environment"]
 
@@ -175,13 +247,27 @@ class Node(metaclass=NodeType):
         over all fields and yields the values of they are nodes.  If the value
         of a field is a list all the nodes in that list are returned.
         """
-        for _, item in self.iter_fields(exclude, only):
-            if isinstance(item, list):
-                for n in item:
-                    if isinstance(n, Node):
-                        yield n
-            elif isinstance(item, Node):
+        if exclude is not None or only is not None:
+            for _, item in self.iter_fields(exclude, only):
+                if isinstance(item, list):
+                    for n in item:
+                        if isinstance(n, Node):
+                            yield n
+                elif isinstance(item, Node):
+                    yield item
+            return
+
+        # Fast path: use pre-classified field lists to avoid
+        # isinstance checks and iter_fields overhead.
+        d = self.__dict__
+        for name in type(self)._node_fields:
+            item = d.get(name)
+            if item is not None:
                 yield item
+        for name in type(self)._node_list_fields:
+            item = d.get(name)
+            if item:
+                yield from item
 
     def find(self, node_type: type[_NodeBound]) -> _NodeBound | None:
         """Find the first node of a given type.  If no such node exists the
@@ -209,32 +295,32 @@ class Node(metaclass=NodeType):
         most common one.  This method is used in the parser to set assignment
         targets and other nodes to a store context.
         """
-        todo = deque([self])
-        while todo:
-            node = todo.popleft()
+        stack = [self]
+        while stack:
+            node = stack.pop()
             if "ctx" in node.fields:
                 node.ctx = ctx  # type: ignore
-            todo.extend(node.iter_child_nodes())
+            _collect_children(node, stack)
         return self
 
     def set_lineno(self, lineno: int, override: bool = False) -> "Node":
         """Set the line numbers of the node and children."""
-        todo = deque([self])
-        while todo:
-            node = todo.popleft()
+        stack = [self]
+        while stack:
+            node = stack.pop()
             if "lineno" in node.attributes:
                 if node.lineno is None or override:
                     node.lineno = lineno
-            todo.extend(node.iter_child_nodes())
+            _collect_children(node, stack)
         return self
 
     def set_environment(self, environment: "Environment") -> "Node":
         """Set the environment for all nodes."""
-        todo = deque([self])
-        while todo:
-            node = todo.popleft()
-            node.environment = environment
-            todo.extend(node.iter_child_nodes())
+        stack = [self]
+        while stack:
+            node = stack.pop()
+            node.__dict__["environment"] = environment
+            _collect_children(node, stack)
         return self
 
     def __eq__(self, other: t.Any) -> bool:
@@ -1189,6 +1275,36 @@ class ScopedEvalContextModifier(EvalContextModifier):
 
     fields = ("body",)
     body: list[Node]
+
+
+def _collect_children(node: Node, out: list[Node] | deque[Node]) -> None:
+    """Collect all direct child nodes of *node* into *out* (appended)."""
+    d = node.__dict__
+    node_type = type(node)
+    for name in node_type._node_fields:
+        child = d.get(name)
+        if child is not None:
+            out.append(child)
+    for name in node_type._node_list_fields:
+        children = d.get(name)
+        if children:
+            out.extend(children)
+
+
+# Pre-classify fields on all node classes for fast iter_child_nodes.
+def _init_field_classifications() -> None:
+    import sys
+
+    ns = vars(sys.modules[__name__])
+    todo = [Node]
+    while todo:
+        cls = todo.pop()
+        cls._classify_fields(ns)
+        todo.extend(cls.__subclasses__())
+
+
+_init_field_classifications()
+del _init_field_classifications
 
 
 # make sure nobody creates custom nodes
