@@ -284,10 +284,15 @@ class Node(metaclass=NodeType):
         """Find all the nodes of a given type.  If the type is a tuple,
         the check is performed for any of the tuple items.
         """
-        for child in self.iter_child_nodes():
-            if isinstance(child, node_type):
-                yield child  # type: ignore
-            yield from child.find_all(node_type)
+        # Iterative BFS avoids the overhead of recursive generators
+        # (yield from) on large ASTs.
+        todo: deque[Node] = deque()
+        _collect_children(self, todo)
+        while todo:
+            node = todo.popleft()
+            if isinstance(node, node_type):
+                yield node  # type: ignore
+            _collect_children(node, todo)
 
     def set_ctx(self, ctx: str) -> "Node":
         """Reset the context of a node and all child nodes.  Per default the
