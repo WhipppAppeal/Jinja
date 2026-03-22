@@ -97,11 +97,7 @@ class NodeType(type):
             if args:
                 origin = t.get_origin(hint)
                 if origin is t.Union or isinstance(hint, _types.UnionType):
-                    return any(
-                        _is_node_type(a)
-                        for a in args
-                        if a is not type(None)
-                    )
+                    return any(_is_node_type(a) for a in args if a is not type(None))
             return False
 
         # Collect annotations from the MRO.
