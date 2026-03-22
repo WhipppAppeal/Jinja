@@ -335,7 +335,12 @@ class Node(metaclass=NodeType):
         if type(self) is not type(other):
             return NotImplemented
 
-        return tuple(self.iter_fields()) == tuple(other.iter_fields())
+        sd = self.__dict__
+        od = other.__dict__
+        for name in self.fields:
+            if sd.get(name) != od.get(name):
+                return False
+        return True
 
     __hash__ = object.__hash__
 

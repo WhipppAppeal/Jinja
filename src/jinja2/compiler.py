@@ -50,7 +50,7 @@ def optimizeconst(f: F) -> F:
         if self.optimizer is not None and not frame.eval_ctx.volatile:
             new_node = self.optimizer.visit(node, frame.eval_ctx)
 
-            if new_node != node:
+            if new_node is not node and new_node != node:
                 return self.visit(new_node, frame)
 
         return f(self, node, frame, **kwargs)
