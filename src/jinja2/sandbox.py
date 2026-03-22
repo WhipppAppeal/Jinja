@@ -24,6 +24,9 @@ F = t.TypeVar("F", bound=t.Callable[..., t.Any])
 #: maximum number of items a range may produce
 MAX_RANGE = 100000
 
+#: maximum size of a string that can be produced by the ``*`` operator
+MAX_STRING_SIZE = 1000000
+
 #: Unsafe function attributes.
 UNSAFE_FUNCTION_ATTRIBUTES: set[str] = set()
 
@@ -97,6 +100,25 @@ def safe_range(*args: int) -> range:
         )
 
     return rng
+
+
+def safe_mul(left: t.Any, right: t.Any) -> t.Any:
+    """A multiplication that prevents creating strings larger than
+    MAX_STRING_SIZE via the ``*`` operator.
+    """
+    if isinstance(left, str) and isinstance(right, int):
+        if right > 0 and len(left) * right > MAX_STRING_SIZE:
+            raise OverflowError(
+                "String repetition too large. The sandbox blocks strings"
+                f" larger than MAX_STRING_SIZE ({MAX_STRING_SIZE})."
+            )
+    elif isinstance(right, str) and isinstance(left, int):
+        if left > 0 and len(right) * left > MAX_STRING_SIZE:
+            raise OverflowError(
+                "String repetition too large. The sandbox blocks strings"
+                f" larger than MAX_STRING_SIZE ({MAX_STRING_SIZE})."
+            )
+    return operator.mul(left, right)
 
 
 def unsafe(f: F) -> F:
@@ -193,7 +215,7 @@ class SandboxedEnvironment(Environment):
     default_binop_table: dict[str, t.Callable[[t.Any, t.Any], t.Any]] = {
         "+": operator.add,
         "-": operator.sub,
-        "*": operator.mul,
+        "*": safe_mul,
         "/": operator.truediv,
         "//": operator.floordiv,
         "**": operator.pow,
@@ -222,7 +244,7 @@ class SandboxedEnvironment(Environment):
     #: interested in.
     #:
     #: .. versionadded:: 2.6
-    intercepted_binops: frozenset[str] = frozenset()
+    intercepted_binops: frozenset[str] = frozenset(["*"])
 
     #: a set of unary operators that should be intercepted.  Each operator
     #: that is added to this set (empty by default) is delegated to the
