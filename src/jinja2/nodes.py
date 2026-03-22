@@ -65,6 +65,7 @@ class NodeType(type):
             assert len(storage) == len(set(storage)), "layout conflict"
             d[attr] = tuple(storage)
         d.setdefault("abstract", False)
+        d["_visit_name"] = f"visit_{name}"
         return type.__new__(mcs, name, bases, d)
 
     def _classify_fields(cls, ns: dict[str, t.Any]) -> None:
@@ -191,7 +192,9 @@ class Node(metaclass=NodeType):
     attributes: tuple[str, ...] = ("lineno", "environment")
     abstract = True
 
-    #: Pre-classified field tuples, set by _init_field_classifications().
+    #: Pre-computed visitor method name and field tuples, set at class
+    #: definition time by the metaclass and _init_field_classifications().
+    _visit_name: t.ClassVar[str]
     _node_fields: t.ClassVar[tuple[str, ...]]
     _node_list_fields: t.ClassVar[tuple[str, ...]]
 

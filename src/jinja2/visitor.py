@@ -30,7 +30,7 @@ class NodeVisitor:
         exists for this node.  In that case the generic visit function is
         used instead.
         """
-        return getattr(self, f"visit_{type(node).__name__}", None)
+        return getattr(self, type(node)._visit_name, None)
 
     def visit(self, node: Node, *args: t.Any, **kwargs: t.Any) -> t.Any:
         """Visit a node."""
