@@ -204,6 +204,7 @@ class Node(metaclass=NodeType):
     def __init__(self, *fields: t.Any, **attributes: t.Any) -> None:
         if self.abstract:
             raise TypeError("abstract nodes are not instantiable")
+        d = self.__dict__
         if fields:
             if len(fields) != len(self.fields):
                 if not self.fields:
@@ -213,11 +214,15 @@ class Node(metaclass=NodeType):
                     f" argument{'s' if len(self.fields) != 1 else ''}"
                 )
             for name, arg in zip(self.fields, fields, strict=False):
-                setattr(self, name, arg)
-        for attr in self.attributes:
-            setattr(self, attr, attributes.pop(attr, None))
+                d[name] = arg
         if attributes:
-            raise TypeError(f"unknown attribute {next(iter(attributes))!r}")
+            for attr in self.attributes:
+                d[attr] = attributes.pop(attr, None)
+            if attributes:
+                raise TypeError(f"unknown attribute {next(iter(attributes))!r}")
+        else:
+            for attr in self.attributes:
+                d[attr] = None
 
     def iter_fields(
         self,
