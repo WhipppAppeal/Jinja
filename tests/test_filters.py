@@ -78,6 +78,28 @@ class TestFilter:
             "[[0, 1, 2, 3], [4, 5, 6, 'X'], [7, 8, 9, 'X']]"
         )
 
+    def test_slice_even_division_with_fill(self, env):
+        """Regression test for #2118: fill_with should not add items when
+        the slice count evenly divides the iterable length."""
+        tmpl = env.from_string("{{ foo|slice(4, 'foo')|list }}")
+        out = tmpl.render(foo=[1, 2, 3, 4])
+        assert out == "[[1], [2], [3], [4]]"
+
+    def test_slice_even_division_no_fill(self, env):
+        tmpl = env.from_string("{{ foo|slice(2)|list }}")
+        out = tmpl.render(foo=[1, 2, 3, 4])
+        assert out == "[[1, 2], [3, 4]]"
+
+    def test_slice_uneven_with_fill(self, env):
+        tmpl = env.from_string("{{ foo|slice(2, 'x')|list }}")
+        out = tmpl.render(foo=[1, 2, 3])
+        assert out == "[[1, 2], [3, 'x']]"
+
+    def test_slice_uneven_five_items(self, env):
+        tmpl = env.from_string("{{ foo|slice(3, 'x')|list }}")
+        out = tmpl.render(foo=[1, 2, 3, 4, 5])
+        assert out == "[[1, 2], [3, 4], [5, 'x']]"
+
     def test_escape(self, env):
         tmpl = env.from_string("""{{ '<">&'|escape }}""")
         out = tmpl.render()
