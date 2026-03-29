@@ -1089,7 +1089,11 @@ def sync_do_slice(
         end = offset + (slice_number + 1) * items_per_slice
         tmp = seq[start:end]
 
-        if fill_with is not None and slice_number >= slices_with_extra and slices_with_extra != 0:
+        if (
+            fill_with is not None
+            and slice_number >= slices_with_extra
+            and slices_with_extra != 0
+        ):
             tmp.append(fill_with)
 
         yield tmp
