@@ -266,6 +266,12 @@ def test_slice(env_async, items):
     )
 
 
+@mark_dualiter("items", lambda: [1, 2, 3, 4])
+def test_slice_fill_with_even_division(env_async, items):
+    tmpl = env_async.from_string("{{ items()|slice(4, 'X')|list }}")
+    assert tmpl.render(items=items) == "[[1], [2], [3], [4]]"
+
+
 def test_unique_with_async_gen(env_async):
     items = ["a", "b", "c", "c", "a", "d", "z"]
     tmpl = env_async.from_string("{{ items|reject('==', 'z')|unique|list }}")
