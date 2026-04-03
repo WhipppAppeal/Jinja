@@ -881,3 +881,18 @@ class TestFilter:
 
         with pytest.raises(TemplateRuntimeError, match="No filter named 'f'"):
             t2.render(x=42)
+
+    def test_slice_no_fill_with_even_division(self, env):
+        """fill_with must not be appended when items divide evenly."""
+        t = env.from_string("{{ items|slice(4, 'X')|list }}")
+        assert t.render(items=[1, 2, 3, 4]) == "[[1], [2], [3], [4]]"
+        assert t.render(items=list(range(9))) == (
+            "[[0, 1, 2], [3, 4, 5], [6, 7, 8]]"
+        )
+
+    def test_slice_fill_with_remainder(self, env):
+        """fill_with should only be appended to shorter slices."""
+        t = env.from_string("{{ items|slice(3, 'X')|list }}")
+        assert t.render(items=list(range(10))) == (
+            "[[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 'X']]"
+        )
