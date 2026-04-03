@@ -886,9 +886,7 @@ class TestFilter:
         """fill_with must not be appended when items divide evenly."""
         t = env.from_string("{{ items|slice(4, 'X')|list }}")
         assert t.render(items=[1, 2, 3, 4]) == "[[1], [2], [3], [4]]"
-        assert t.render(items=list(range(9))) == (
-            "[[0, 1, 2], [3, 4, 5], [6, 7, 8]]"
-        )
+        assert t.render(items=list(range(9))) == ("[[0, 1, 2], [3, 4, 5], [6, 7, 8]]")
 
     def test_slice_fill_with_remainder(self, env):
         """fill_with should only be appended to shorter slices."""
