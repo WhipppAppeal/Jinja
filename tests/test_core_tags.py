@@ -309,11 +309,14 @@ class TestIfCondition:
         assert tmpl.render() == "..."
 
     def test_elif_deep(self, env):
-        elifs = "\n".join(f"{{% elif a == {i} %}}{i}" for i in range(1, 1000))
+        # Keep this deep enough to exercise flat elif code generation without
+        # exceeding CPython's lower recursion ceiling on s390x.
+        depth = 500
+        elifs = "\n".join(f"{{% elif a == {i} %}}{i}" for i in range(1, depth + 1))
         tmpl = env.from_string(f"{{% if a == 0 %}}0{elifs}{{% else %}}x{{% endif %}}")
-        for x in (0, 10, 999):
+        for x in (0, 10, depth):
             assert tmpl.render(a=x).strip() == str(x)
-        assert tmpl.render(a=1000).strip() == "x"
+        assert tmpl.render(a=depth + 1).strip() == "x"
 
     def test_else(self, env):
         tmpl = env.from_string("{% if false %}XXX{% else %}...{% endif %}")
