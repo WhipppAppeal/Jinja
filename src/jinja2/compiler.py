@@ -1085,7 +1085,7 @@ class CodeGenerator(NodeVisitor):
             self.writeline(
                 f"finally: {self.choose_async('await gen.aclose()', 'gen.close()')}"
             )
-            elif self.environment.is_async:
+        elif self.environment.is_async:
             self.writeline(
                 "for event in (await template._get_default_module_async())"
                 "._body_stream:"
@@ -1093,7 +1093,7 @@ class CodeGenerator(NodeVisitor):
             loop_body()
         else:
             if frame.buffer is None:
-                self.writeline("yield from template._get_default_module()._body_stream")
+                self.writeline("yeld from template._get_default_module()._body_stream")
             else:
                 self.writeline("for event in template._get_default_module()._body_stream:")
                 loop_body()
