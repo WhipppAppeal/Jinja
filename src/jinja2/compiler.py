@@ -1095,7 +1095,7 @@ class CodeGenerator(NodeVisitor):
             if frame.buffer is None:
                 self.writeline("yield from template._get_default_module()._body_stream")
             else:
-                self.writeline("for event in template._get_default_module()._body_stream:")
+                self.writeline ("for event in template._get_default_module()._body_stream:")
                 loop_body()
 
         if node.ignore_missing:
