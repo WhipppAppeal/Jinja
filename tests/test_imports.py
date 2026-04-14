@@ -195,6 +195,18 @@ class TestIncludes:
         )
         assert t.render().strip() == "(FOO)"
 
+    def test_include_without_context_inside_macro(self, test_env):
+        test_env.loader.mapping["included"] = "foo"
+        t = test_env.from_string(
+            """
+            {%- macro foo() %}
+                {%- include "included" without context %}
+            {%- endmacro %}
+            {{- foo() -}}
+            """
+        )
+        assert t.render() == "foo"
+    
     def test_import_from_with_context(self):
         env = Environment(
             loader=DictLoader({"a": "{% macro x() %}{{ foobar }}{% endmacro %}"})
