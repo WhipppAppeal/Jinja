@@ -1,0 +1,99 @@
+parser grammar JinjaGrammar;
+
+options {
+    tokenVocab=JinjaLexer;
+}
+
+start : expressions;
+
+expression
+    : inline_statement
+    | block_statement
+    ;
+
+expressions     : expression*;
+
+list_literal            : LSQB SP? list_literal_values? SP? RSQB;
+list_literal_values
+    :
+    (list_literal_value SP? COMMA SP?)*
+    list_literal_value
+    ;
+list_literal_value
+    : STRING_LITERAL
+    | variable_name
+    ;
+
+variable_name : IDENTIFIER;
+
+statement_block
+    :
+    STATEMENT_ID_BLOCK SP IDENTIFIER
+    ;
+
+statement_include_template
+    : STRING_LITERAL
+    | list_literal
+    | variable_name
+    ;
+
+statement_include_context
+    : STATEMENT_INCLUDE_WITH_CONTEXT
+    | STATEMENT_INCLUDE_WITHOUT_CONTEXT
+    ;
+
+statement_include
+    : STATEMENT_ID_INCLUDE
+        (SP statement_include_template)
+        (SP STATEMENT_INCLUDE_IGNORE_MISSING)?
+        (SP statement_include_context)?
+    ;
+
+statement_import_file
+    : STRING_LITERAL
+    | variable_name
+    ;
+
+statement_import_variable
+    : variable_name (SP STATEMENT_ID_IMPORT_AS SP variable_name)?
+    ;
+
+statement_import_variable_list
+    : (statement_import_variable SP? COMMA SP?)* statement_import_variable
+    ;
+
+statement_import
+    : STATEMENT_ID_IMPORT SP statement_import_file SP STATEMENT_ID_IMPORT_AS SP variable_name (SP statement_include_context)?
+    | STATEMENT_ID_FROM SP statement_import_file SP STATEMENT_ID_IMPORT SP statement_import_variable_list (SP statement_include_context)?
+    ;
+
+block_end_statement_id
+    : STATEMENT_END_ID_BLOCK
+    | STATEMENT_END_ID_SET
+    ;
+
+// block_statement_with_parameters
+//     : block_statement_id
+//     | block_statement_id
+//     ;
+
+block_statement_without_parameters
+    : statement_block
+    ;
+
+block_statement_start_content
+    : block_statement_without_parameters
+    // | block_statement_with_parameters
+    ;
+
+inline_statement_content
+    : statement_include
+    | statement_import
+    ;
+
+inline_statement            : STATEMENT_OPEN inline_statement_content STATEMENT_CLOSE;
+
+block_statement_start       : STATEMENT_OPEN block_statement_start_content STATEMENT_CLOSE;
+block_statement_end         : STATEMENT_OPEN block_end_statement_id STATEMENT_CLOSE;
+
+block_statement             : block_statement_start expressions block_statement_end;
